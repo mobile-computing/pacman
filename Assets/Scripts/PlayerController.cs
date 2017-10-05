@@ -4,7 +4,7 @@ using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
-
+	public VirtualJoystick joystick;
     public float speed = 0.4f;
     Vector2 _dest = Vector2.zero;
     Vector2 _dir = Vector2.zero;
@@ -30,6 +30,7 @@ public class PlayerController : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+		joystick = GameObject.Find ("Joystick").GetComponent<VirtualJoystick> ();
         GM = GameObject.Find("Game Manager").GetComponent<GameManager>();
         SM = GameObject.Find("Game Manager").GetComponent<ScoreManager>();
         GUINav = GameObject.Find("UI Manager").GetComponent<GameGUINavigation>();
@@ -106,29 +107,26 @@ public class PlayerController : MonoBehaviour
         Vector2 p = Vector2.MoveTowards(transform.position, _dest, speed);
         GetComponent<Rigidbody2D>().MovePosition(p);
 
-		#if UNITY_STANDALONE || UNITY_WEBPLAYER
         // get the next direction from keyboard
-        if (Input.GetAxis("Horizontal") > 0) _nextDir = Vector2.right;
-        if (Input.GetAxis("Horizontal") < 0) _nextDir = -Vector2.right;
-        if (Input.GetAxis("Vertical") > 0) _nextDir = Vector2.up;
-        if (Input.GetAxis("Vertical") < 0) _nextDir = -Vector2.up;
-		#else
-		if (Input.touchCount > 0) {
-			Touch touch = Input.touches[0];
-			Vector2 touchVec = touch.position;
-			int screenHeight = Screen.height;
-			int screenWidth = Screen.width;
-			if (touchVec.x < screenWidth / 3) {
-				_nextDir = -Vector2.right;
-			} else if (touchVec.x > screenWidth / 3 * 2 ) {
-				_nextDir = Vector2.right;
-			} else if (touchVec.y < screenHeight / 3) {
-				_nextDir = -Vector2.up;
-			} else if (touchVec.y > screenHeight / 3 * 2) {
-				_nextDir = Vector2.up;
+		float horizontal = joystick.Horizontal ();
+		float vertical = joystick.Vertical ();
+#if UNITY_STANDALONE || UNITY_WEBPLAYER
+		if (Math.Abs (horizontal) > 0 || Math.Abs (vertical) > 0) {
+#else
+		if (Math.Abs (horizontal) > 0.5 || Math.Abs (vertical) > 0.5) {
+#endif
+			if (Math.Abs (horizontal) > Math.Abs (vertical)) {
+				if (horizontal > 0)
+					_nextDir = Vector2.right;
+				else
+					_nextDir = Vector2.left;
+			} else {
+				if (vertical > 0)
+					_nextDir = Vector2.up;
+				else
+					_nextDir = Vector2.down;
 			}
 		}
-		#endif
 
         // if pacman is in the center of a tile
         if (Vector2.Distance(_dest, transform.position) < 0.00001f)
